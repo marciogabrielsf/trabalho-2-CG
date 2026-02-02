@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trabalho 2 - Computação Gráfica</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #000;
+        }
+        
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 1;
+        }
+        
+        #info h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        
+        #info p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h3>Controles da Câmera</h3>
+        <p><strong>WASD</strong> - Mover câmera</p>
+        <p><strong>Setas</strong> - Rotacionar câmera</p>
+        <p><strong>Q/E</strong> - Mover para cima/baixo</p>
+        <p><strong>Shift</strong> - Aumentar velocidade</p>
+    </div>
+    
+    <canvas id="glCanvas"></canvas>
+    
+    <!-- Matemática Linear -->
+    <script src="./src/math/vector3.js"></script>
+    <script src="./src/math/matrix4.js"></script>
+    
+    <!-- Sistema de Câmera -->
+    <script src="./src/camera/camera.js"></script>
+    
+    <!-- Geometrias -->
+    <script src="./src/geometry/cube.js"></script>
+    <script src="./src/geometry/plane.js"></script>
+    
+    <!-- Renderizador -->
+    <script src="./src/renderer/shader.js"></script>
+    <script src="./src/renderer/renderer.js"></script>
+    
+    <!-- Input -->
+    <script src="./src/input/input.js"></script>
+    
+    <!-- Aplicação Principal -->
+    <script src="./src/main.js"></script>
+</body>
+</html>

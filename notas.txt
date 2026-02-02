@@ -1,0 +1,5 @@
+Márcio - Cenário e modelagem, importador .obj
+Suyane - Sistema de iluminação utilizando o modelo de reflexão de Phong, com
+movimentação de pelo menos uma fonte de luz;
+Joaquim - Pelo menos um objeto animado por meio de transformações geométricas;
+Janaína - Menus, textos, Interface em geral

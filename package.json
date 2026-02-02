@@ -1,0 +1,19 @@
+{
+  "name": "trabalho-2-cg",
+  "version": "1.0.0",
+  "description": "Trabalho 2 - Computação Gráfica - Sistema de câmera 3D e cena interativa em WebGL puro",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000 || python -m SimpleHTTPServer 8000",
+    "serve": "npx http-server -p 8000 -o"
+  },
+  "keywords": [
+    "webgl",
+    "3d",
+    "graphics",
+    "camera",
+    "phong"
+  ],
+  "author": "",
+  "license": "MIT"
+}
