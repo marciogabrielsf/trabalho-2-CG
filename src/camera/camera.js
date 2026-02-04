@@ -1,6 +1,6 @@
 class Camera {
-    constructor(fov = 45, aspect = 1, near = 0.1, far = 100) {
-        this.position = new Vector3(0, 1.5, 5);
+    constructor(fov = 45, aspect = 1, near = 0.1, far = 200) {
+        this.position = new Vector3(0, 5, 20);
         this.rotation = new Vector3(0, 0, 0);
         
         this.fov = fov * Math.PI / 180;
@@ -11,6 +11,7 @@ class Camera {
         this.moveSpeed = 5.0;
         this.rotationSpeed = 2.0;
         this.sprintMultiplier = 2.0;
+        this.mouseSensitivity = 0.002;
         
         this.up = new Vector3(0, 1, 0);
     }
@@ -87,18 +88,29 @@ class Camera {
         }
 
         if (input.isKeyDown('ArrowLeft')) {
-            this.rotation.y += rotateAmount;
+            this.rotation.y -= rotateAmount;
         }
         if (input.isKeyDown('ArrowRight')) {
-            this.rotation.y -= rotateAmount;
+            this.rotation.y += rotateAmount;
         }
 
         const maxPitch = Math.PI / 2 - 0.01;
         if (input.isKeyDown('ArrowUp') && !input.isKeyDown('KeyW')) {
-            this.rotation.x = Math.min(this.rotation.x + rotateAmount, maxPitch);
+            this.rotation.x = Math.min(this.rotation.x - rotateAmount, maxPitch);
         }
         if (input.isKeyDown('ArrowDown') && !input.isKeyDown('KeyS')) {
-            this.rotation.x = Math.max(this.rotation.x - rotateAmount, -maxPitch);
+            this.rotation.x = Math.max(this.rotation.x + rotateAmount, -maxPitch);
+        }
+
+        const mouseDelta = input.getMouseDelta();
+        const isRightMouseDown = input.isMouseButtonDown(2);
+        const isPointerLocked = input.pointerLocked;
+        
+        if (isRightMouseDown || isPointerLocked) {
+            this.rotation.y += mouseDelta.x * this.mouseSensitivity;
+            this.rotation.x -= mouseDelta.y * this.mouseSensitivity;
+            
+            this.rotation.x = Math.max(-maxPitch, Math.min(maxPitch, this.rotation.x));
         }
     }
 

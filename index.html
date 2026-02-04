@@ -48,6 +48,10 @@
         <p><strong>Setas</strong> - Rotacionar câmera</p>
         <p><strong>Q/E</strong> - Mover para cima/baixo</p>
         <p><strong>Shift</strong> - Aumentar velocidade</p>
+        <p style="margin-top: 10px;"><strong>K</strong> - Toggle Skybox</p>
+        <p><strong>L</strong> - Toggle Shadows</p>
+        <p><strong>M</strong> - Debug Shadow Map</p>
+        <p style="margin-top: 10px; color: #4CAF50;"><strong>🏢 Cenário:</strong> Prédio NC2A</p>
     </div>
     
     <canvas id="glCanvas"></canvas>
@@ -62,6 +66,18 @@
     <!-- Geometrias -->
     <script src="./src/geometry/cube.js"></script>
     <script src="./src/geometry/plane.js"></script>
+    
+    <!-- Skybox -->
+    <script src="./src/skybox/skybox.js"></script>
+    <script src="./src/skybox/skyboxShader.js"></script>
+    
+    <!-- Shadows -->
+    <script src="./src/shadows/shadowShader.js"></script>
+    <script src="./src/shadows/shadowMap.js"></script>
+    
+    <!-- Loaders -->
+    <script src="./src/loaders/mtlLoader.js"></script>
+    <script src="./src/loaders/objLoader.js"></script>
     
     <!-- Renderizador -->
     <script src="./src/renderer/shader.js"></script>

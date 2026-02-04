@@ -3,6 +3,7 @@ class Plane {
         const positions = [];
         const colors = [];
         const normals = [];
+        const texCoords = [];
         const indices = [];
 
         const segmentWidth = width / subdivisions;
@@ -23,6 +24,10 @@ class Plane {
                 }
                 
                 normals.push(0, 1, 0);
+                
+                const u = x / subdivisions;
+                const v = z / subdivisions;
+                texCoords.push(u * (width / 10), v * (depth / 10));
             }
         }
 
@@ -38,12 +43,21 @@ class Plane {
             }
         }
 
-        return {
+        const result = {
             positions: new Float32Array(positions),
             colors: new Float32Array(colors),
             normals: new Float32Array(normals),
+            texCoords: new Float32Array(texCoords),
             indices: new Uint16Array(indices),
             vertexCount: indices.length
         };
+        
+        console.log('Plane.createGeometry returning:', {
+            hasTexCoords: !!result.texCoords,
+            texCoordsLength: result.texCoords.length,
+            texCoordsArrayLength: texCoords.length
+        });
+        
+        return result;
     }
 }

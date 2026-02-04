@@ -42,6 +42,37 @@ class Matrix4 {
         return matrix;
     }
 
+    static orthographic(left, right, bottom, top, near, far) {
+        const matrix = new Matrix4();
+        const e = matrix.elements;
+
+        const width = right - left;
+        const height = top - bottom;
+        const depth = far - near;
+
+        e[0] = 2 / width;
+        e[1] = 0;
+        e[2] = 0;
+        e[3] = 0;
+
+        e[4] = 0;
+        e[5] = 2 / height;
+        e[6] = 0;
+        e[7] = 0;
+
+        e[8] = 0;
+        e[9] = 0;
+        e[10] = -2 / depth;
+        e[11] = 0;
+
+        e[12] = -(right + left) / width;
+        e[13] = -(top + bottom) / height;
+        e[14] = -(far + near) / depth;
+        e[15] = 1;
+
+        return matrix;
+    }
+
     static lookAt(eye, target, up) {
         const matrix = new Matrix4();
         

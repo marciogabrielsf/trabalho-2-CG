@@ -5,14 +5,20 @@ Sistema de câmera 3D e cena interativa implementada em WebGL puro.
 ## 🎯 Características
 
 - ✅ **WebGL Puro** - Sem bibliotecas de alto nível (three.js, etc)
-- ✅ **Sistema de Câmera** - Câmera em primeira pessoa com controles WASD
+- ✅ **Sistema de Câmera** - Câmera em primeira pessoa com controles WASD + Mouse
+- ✅ **Controle de Mouse** - Rotação de câmera com clique direito ou Pointer Lock
 - ✅ **Projeção Perspectiva** - Matriz de projeção implementada manualmente
 - ✅ **Iluminação Phong** - Modelo de reflexão Phong com luz dinâmica
-- ✅ **Animações** - Cubos com rotação automática
+- ✅ **Skybox** - Céu com gradiente de cores renderizado ao fundo
+- ✅ **Shadow Mapping** - Sombras dinâmicas com PCF (Percentage Closer Filtering)
+- ✅ **Animações** - Objetos com rotação automática
 - ✅ **Geometrias Customizadas** - Cubos e planos criados manualmente
+- ✅ **Leitor OBJ Próprio** - Parser de arquivos .obj implementado do zero
 - ✅ **Álgebra Linear Própria** - Implementação de Vector3 e Matrix4
 
 ## 🎮 Controles
+
+### Teclado
 
 | Tecla | Ação |
 |-------|------|
@@ -25,6 +31,18 @@ Sistema de câmera 3D e cena interativa implementada em WebGL puro.
 | **← →** | Rotacionar câmera horizontalmente |
 | **↑ ↓** | Rotacionar câmera verticalmente (quando não pressionando W/S) |
 | **Shift** | Aumentar velocidade de movimento |
+| **K** | Toggle Skybox (Liga/Desliga) |
+| **L** | Toggle Shadows (Liga/Desliga Sombras) |
+| **M** | Debug Shadow Map (Visualização de Debug) |
+
+### Mouse
+
+| Ação | Resultado |
+|------|-----------|
+| **Clique no Canvas** | Ativa Pointer Lock (trava cursor) |
+| **Clique Direito + Arrastar** | Rotacionar câmera (modo alternativo) |
+| **Mover Mouse** (Pointer Lock ativo) | Rotacionar câmera livremente |
+| **ESC** | Sair do Pointer Lock |
 
 ## 📁 Estrutura do Projeto
 
@@ -32,6 +50,15 @@ Sistema de câmera 3D e cena interativa implementada em WebGL puro.
 trabalho-2-CG/
 ├── index.html              # Página principal
 ├── README.md              # Este arquivo
+├── OBJ_LOADER.md          # Documentação do leitor OBJ
+├── TESTING.md             # Guia de testes para skybox e shadows
+├── IMPLEMENTATION_SUMMARY.md  # Resumo da implementação
+├── assets/
+│   └── models/            # Modelos 3D em formato OBJ
+│       ├── nc2a.obj       # Prédio principal (93KB)
+│       ├── pyramid.obj    # Pirâmide
+│       ├── sphere.obj     # Esfera
+│       └── teapot.obj     # Chaleira
 └── src/
     ├── main.js            # Aplicação principal e loop de renderização
     ├── math/
@@ -42,6 +69,14 @@ trabalho-2-CG/
     ├── geometry/
     │   ├── cube.js        # Geometria do cubo
     │   └── plane.js       # Geometria do plano
+    ├── skybox/
+    │   ├── skybox.js      # Geometria do skybox
+    │   └── skyboxShader.js # Shaders do skybox
+    ├── shadows/
+    │   ├── shadowMap.js   # Sistema de shadow mapping
+    │   └── shadowShader.js # Shader de profundidade para sombras
+    ├── loaders/
+    │   └── objLoader.js   # Leitor proprietário de arquivos OBJ
     ├── renderer/
     │   ├── shader.js      # Compilação e gerenciamento de shaders
     │   └── renderer.js    # Sistema de renderização WebGL
@@ -112,11 +147,53 @@ Implementação do modelo Phong:
 - **Diffuse** - Iluminação difusa baseada em normais
 - **Specular** - Reflexão especular com shininess = 32
 
+### Leitor OBJ
+
+Implementação própria de parser de arquivos OBJ:
+- Suporte a vértices (v), normais (vn) e coordenadas de textura (vt)
+- Parsing de faces triangulares, quadradas e poligonais
+- Triangulação automática de faces complexas
+- Cálculo automático de normais se ausentes
+- Estatísticas do modelo (vértices, triângulos, bounds)
+- Ver [OBJ_LOADER.md](./OBJ_LOADER.md) para documentação completa
+
 ### Animações
 
 - Luz orbitando a cena em movimento circular
-- Múltiplos cubos com rotações independentes
+- Múltiplos objetos com rotações independentes
 - Velocidades angulares configuráveis por objeto
+- Modelos OBJ carregados dinamicamente
+
+### Skybox
+
+Sistema de skybox com renderização ao infinito:
+- Cubo de 50 unidades renderizado como fundo
+- Gradiente de cores azuis (6 tonalidades)
+- Shader remove translação da matriz view
+- Renderizado por último com face culling desabilitado
+- Toggle com tecla **K**
+
+### Shadow Mapping
+
+Sistema completo de mapeamento de sombras:
+- **Resolução:** 1024x1024 shadow map
+- **Técnica:** PCF (Percentage Closer Filtering) com kernel 3x3
+- **Projeção:** Ortográfica para luz direcional (frustum de 25 unidades)
+- **Bias:** 0.001 constante para prevenir shadow acne
+- **Render-to-Texture:** Framebuffer com RGBA + depth renderbuffer
+- **Debug Mode:** Visualização de valores de profundidade (tecla **M**)
+- **Toggle:** Liga/desliga com tecla **L**
+
+**Pipeline de Renderização:**
+1. **Shadow Pass** - Renderiza cena da perspectiva da luz
+2. **Scene Pass** - Renderiza cena com iluminação e sombras
+3. **Skybox Pass** - Renderiza skybox como plano de fundo
+
+## 🧪 Testes
+
+Para testar as funcionalidades de skybox e shadows, consulte o arquivo [TESTING.md](./TESTING.md).
+
+Para detalhes completos da implementação, veja [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md).
 
 ## 🎓 Requisitos Atendidos
 
@@ -126,6 +203,7 @@ Implementação do modelo Phong:
 - [x] Fonte de luz em movimento
 - [x] Objetos animados com transformações geométricas
 - [x] Objetos com cores sólidas
+- [x] Leitor proprietário de arquivos OBJ
 - [x] Biblioteca de álgebra linear própria
 - [x] Captura de eventos de teclado
 - [x] Código organizado e modular
