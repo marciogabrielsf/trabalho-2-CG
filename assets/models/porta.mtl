@@ -1,4 +1,4 @@
-# Blender 5.0.1 MTL File: 'None'
+# Blender 5.0.1 MTL File: 'nc2a.blend'
 # www.blender.org
 
 newmtl Materiais.001
@@ -14,7 +14,7 @@ illum 2
 newmtl Materiais.002
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.047423 0.042859 0.042440
+Kd 0.452999 0.403542 0.399025
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
