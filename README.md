@@ -26,8 +26,10 @@ Sistema de câmera 3D e cena interativa implementada em WebGL puro.
 | **S / ↓** | Mover para trás |
 | **A** | Mover para esquerda |
 | **D** | Mover para direita |
-| **Q** | Subir |
-| **E** | Descer |
+| **Espaço** | Pular (modo FPS) |
+| **Q** | Subir (apenas modo Noclip) |
+| **E** | Descer (apenas modo Noclip) |
+| **V** | Alternar modo Noclip (voo livre) / FPS (com física) |
 | **← →** | Rotacionar câmera horizontalmente |
 | **↑ ↓** | Rotacionar câmera verticalmente (quando não pressionando W/S) |
 | **Shift** | Aumentar velocidade de movimento |

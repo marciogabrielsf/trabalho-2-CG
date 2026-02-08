@@ -3,21 +3,21 @@ class ShadowMap {
         this.gl = gl;
         this.width = width;
         this.height = height;
-        
+
         this.framebuffer = null;
         this.depthTexture = null;
         this.depthProgram = null;
-        
+
         this.lightProjectionMatrix = null;
         this.lightViewMatrix = null;
     }
 
     initialize() {
         const gl = this.gl;
-        
+
         this.depthProgram = ShadowShader.compileDepthProgram(gl);
         if (!this.depthProgram) {
-            console.error('Failed to compile shadow depth program');
+            console.error("Failed to compile shadow depth program");
             return false;
         }
 
@@ -35,9 +35,9 @@ class ShadowMap {
             0,
             gl.RGBA,
             gl.UNSIGNED_BYTE,
-            null
+            null,
         );
-        
+
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -46,40 +46,72 @@ class ShadowMap {
         const depthRenderbuffer = gl.createRenderbuffer();
         gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderbuffer);
         gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
-        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderbuffer);
+        gl.framebufferRenderbuffer(
+            gl.FRAMEBUFFER,
+            gl.DEPTH_ATTACHMENT,
+            gl.RENDERBUFFER,
+            depthRenderbuffer,
+        );
 
         gl.framebufferTexture2D(
             gl.FRAMEBUFFER,
             gl.COLOR_ATTACHMENT0,
             gl.TEXTURE_2D,
             this.depthTexture,
-            0
+            0,
         );
 
         const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
         if (status !== gl.FRAMEBUFFER_COMPLETE) {
-            console.error('Framebuffer not complete:', status);
+            console.error("Framebuffer not complete:", status);
             return false;
         }
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.bindTexture(gl.TEXTURE_2D, null);
-        
-        console.log('Shadow map initialized:', this.width, 'x', this.height);
+
+        console.log("Shadow map initialized:", this.width, "x", this.height);
         return true;
     }
 
     updateLightMatrices(lightPosition) {
         const lightTarget = new Vector3(0, 0, 0);
         const lightUp = new Vector3(0, 1, 0);
-        
+
         this.lightViewMatrix = Matrix4.lookAt(lightPosition, lightTarget, lightUp);
-        
+
         const orthoSize = 25;
         this.lightProjectionMatrix = Matrix4.orthographic(
-            -orthoSize, orthoSize,
-            -orthoSize, orthoSize,
-            1.0, 100
+            -orthoSize,
+            orthoSize,
+            -orthoSize,
+            orthoSize,
+            1.0,
+            100,
+        );
+    }
+
+    updateLightMatricesDirectional(sunDirection) {
+        // Posicionar a "câmera de luz" longe na direção oposta ao sol
+        const distance = 50;
+        const lightPosition = new Vector3(
+            -sunDirection.x * distance,
+            -sunDirection.y * distance,
+            -sunDirection.z * distance,
+        );
+        const lightTarget = new Vector3(0, 0, 0);
+        const lightUp = new Vector3(0, 1, 0);
+
+        this.lightViewMatrix = Matrix4.lookAt(lightPosition, lightTarget, lightUp);
+
+        const orthoSize = 50;
+        this.lightProjectionMatrix = Matrix4.orthographic(
+            -orthoSize,
+            orthoSize,
+            -orthoSize,
+            orthoSize,
+            0.1,
+            150,
         );
     }
 

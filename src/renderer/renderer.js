@@ -4,12 +4,20 @@ class Renderer {
         this.shaderProgram = null;
         this.objects = [];
 
-        // Multiple lights - one for each monitor
+        // Multiple lights - monitors + interior
         this.lights = [
-            { position: new Vector3(22.0, 2.2, -3.7), color: new Vector3(1.0, 0.9, 0.8) },
+            // Luzes dos monitores
             { position: new Vector3(22.0, 2.2, -5.8), color: new Vector3(0.8, 0.9, 1.0) },
-            { position: new Vector3(22.0, 2.2, -7.8), color: new Vector3(0.9, 1.0, 0.9) },
+            // Luzes internas do prédio (teto)
+            { position: new Vector3(15.0, 4.0, -15.0), color: new Vector3(1.0, 0.95, 0.8) },
+            { position: new Vector3(0.0, 2.0, 0.0), color: new Vector3(1.0, 0.95, 0.8) },
+            { position: new Vector3(0.0, 3.0, -10.0), color: new Vector3(0.9, 0.9, 1.0) },
         ];
+
+        // Luz direcional (sol)
+        this.sunDirection = new Vector3(-0.5, -0.8, -0.3); // Direção do sol (de cima-esquerda)
+        this.sunColor = new Vector3(1.0, 0.95, 0.85); // Cor quente do sol
+        this.enableSun = true;
 
         this.skybox = null;
         this.skyboxShader = null;
@@ -164,8 +172,8 @@ class Renderer {
         const gl = this.gl;
         const shadowProgram = this.shadowMap.depthProgram;
 
-        // Use first light for shadows
-        this.shadowMap.updateLightMatrices(this.lights[0].position);
+        // Use sun direction for shadows
+        this.shadowMap.updateLightMatricesDirectional(this.sunDirection);
         this.shadowMap.bind();
 
         gl.useProgram(shadowProgram.program);
@@ -286,7 +294,10 @@ class Renderer {
 
         for (let i = 0; i < this.lights.length; i++) {
             const light = this.lights[i];
-            if (program.uniformLocations.lightPositions[i] !== null) {
+            if (
+                program.uniformLocations.lightPositions[i] !== null &&
+                program.uniformLocations.lightPositions[i] !== undefined
+            ) {
                 gl.uniform3f(
                     program.uniformLocations.lightPositions[i],
                     light.position.x,
@@ -294,7 +305,10 @@ class Renderer {
                     light.position.z,
                 );
             }
-            if (program.uniformLocations.lightColors[i] !== null) {
+            if (
+                program.uniformLocations.lightColors[i] !== null &&
+                program.uniformLocations.lightColors[i] !== undefined
+            ) {
                 gl.uniform3f(
                     program.uniformLocations.lightColors[i],
                     light.color.x,
@@ -303,6 +317,21 @@ class Renderer {
                 );
             }
         }
+
+        // Sun light uniforms
+        gl.uniform1i(program.uniformLocations.enableSun, this.enableSun ? 1 : 0);
+        gl.uniform3f(
+            program.uniformLocations.sunDirection,
+            this.sunDirection.x,
+            this.sunDirection.y,
+            this.sunDirection.z,
+        );
+        gl.uniform3f(
+            program.uniformLocations.sunColor,
+            this.sunColor.x,
+            this.sunColor.y,
+            this.sunColor.z,
+        );
 
         gl.uniform3f(
             program.uniformLocations.viewPosition,

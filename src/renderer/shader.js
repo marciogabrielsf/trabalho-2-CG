@@ -53,6 +53,11 @@ class ShaderProgram {
             uniform int uDebugShadows;
             uniform int uUseTexture;
             uniform int uDebugTexture;
+
+            // Luz direcional (sol)
+            uniform vec3 uSunDirection;
+            uniform vec3 uSunColor;
+            uniform int uEnableSun;
             
             float calculateShadow(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
                 vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -111,11 +116,23 @@ class ShaderProgram {
                 // Ambient light (global)
                 vec3 ambient = 0.2 * vec3(1.0, 1.0, 1.0);
                 
-                // Accumulate lighting from all lights
+                // === Luz direcional (sol) ===
+                vec3 sunDiffuse = vec3(0.0);
+                vec3 sunSpecular = vec3(0.0);
+                if(uEnableSun == 1) {
+                    vec3 sunDir = normalize(-uSunDirection);
+                    float sunDiff = max(dot(norm, sunDir), 0.0);
+                    sunDiffuse = sunDiff * uSunColor;
+                    
+                    vec3 sunReflect = reflect(-sunDir, norm);
+                    float sunSpec = pow(max(dot(viewDir, sunReflect), 0.0), 32.0);
+                    sunSpecular = 0.3 * sunSpec * uSunColor;
+                }
+
+                // === Point lights ===
                 vec3 diffuse = vec3(0.0);
                 vec3 specular = vec3(0.0);
                 
-                // Safeguard: if no lights, use basic lighting
                 if(uNumLights > 0) {
                     for(int i = 0; i < MAX_LIGHTS; i++) {
                         if(i >= uNumLights) break;
@@ -136,18 +153,20 @@ class ShaderProgram {
                         float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
                         specular += 0.5 * spec * uLightColors[i] * attenuation;
                     }
-                } else {
-                    // Fallback lighting
+                } else if(uEnableSun == 0) {
+                    // Fallback lighting only if no sun either
                     diffuse = vec3(0.8);
                 }
                 
+                // Shadow (baseado na direcao do sol)
                 float shadow = 0.0;
-                if(uUseShadows == 1 && uNumLights > 0) {
-                    vec3 lightDir = normalize(uLightPositions[0] - vFragPos);
-                    shadow = calculateShadow(vFragPosLightSpace, norm, lightDir);
+                if(uUseShadows == 1 && uEnableSun == 1) {
+                    vec3 sunDir = normalize(-uSunDirection);
+                    shadow = calculateShadow(vFragPosLightSpace, norm, sunDir);
                 }
                 
-                vec3 lighting = ambient + (1.0 - shadow) * (diffuse + specular);
+                // Combinar: sol afetado por sombra + point lights nao afetados por sombra
+                vec3 lighting = ambient + (1.0 - shadow) * (sunDiffuse + sunSpecular) + diffuse + specular;
                 vec3 result = lighting * baseColor;
                 result = clamp(result, 0.0, 1.0);
                 
@@ -222,6 +241,9 @@ class ShaderProgram {
                 debugShadows: gl.getUniformLocation(program, "uDebugShadows"),
                 useTexture: gl.getUniformLocation(program, "uUseTexture"),
                 debugTexture: gl.getUniformLocation(program, "uDebugTexture"),
+                sunDirection: gl.getUniformLocation(program, "uSunDirection"),
+                sunColor: gl.getUniformLocation(program, "uSunColor"),
+                enableSun: gl.getUniformLocation(program, "uEnableSun"),
             },
         };
 
