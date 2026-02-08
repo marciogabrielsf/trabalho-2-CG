@@ -9,6 +9,7 @@ yarn.lock
 *.swp
 *.swo
 *~
+.history/
 
 # OS
 .DS_Store

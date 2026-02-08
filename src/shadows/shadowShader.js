@@ -35,22 +35,26 @@ class ShadowShader {
         const program = gl.createProgram();
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
+
+        // Bind attribute location explicitly for ANGLE/Chromium compatibility
+        gl.bindAttribLocation(program, 0, "aPosition");
+
         gl.linkProgram(program);
 
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.error('Shadow depth program linking error:', gl.getProgramInfoLog(program));
+            console.error("Shadow depth program linking error:", gl.getProgramInfoLog(program));
             return null;
         }
 
         return {
             program: program,
             attribLocations: {
-                position: gl.getAttribLocation(program, 'aPosition')
+                position: gl.getAttribLocation(program, "aPosition"),
             },
             uniformLocations: {
-                modelMatrix: gl.getUniformLocation(program, 'uModelMatrix'),
-                lightSpaceMatrix: gl.getUniformLocation(program, 'uLightSpaceMatrix')
-            }
+                modelMatrix: gl.getUniformLocation(program, "uModelMatrix"),
+                lightSpaceMatrix: gl.getUniformLocation(program, "uLightSpaceMatrix"),
+            },
         };
     }
 
@@ -60,7 +64,7 @@ class ShadowShader {
         gl.compileShader(shader);
 
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            console.error('Shadow shader compilation error:', gl.getShaderInfoLog(shader));
+            console.error("Shadow shader compilation error:", gl.getShaderInfoLog(shader));
             gl.deleteShader(shader);
             return null;
         }
