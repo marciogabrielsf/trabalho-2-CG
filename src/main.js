@@ -36,6 +36,12 @@ class Application {
         window.addEventListener('resize', () => this.resizeCanvas());
 
         this.input = new InputManager(this.canvas);
+        this.keyStates = {
+            kPressed: false,
+            lPressed: false,
+            mPressed: false,
+            pPressed: false
+        };
         
         const aspect = this.canvas.width / this.canvas.height;
         this.camera = new Camera(45, aspect, 0.1, 200);
@@ -130,18 +136,48 @@ class Application {
             console.log('Building (nc2a) loaded:', buildingStats);
             console.log('Building bounds:', buildingStats.bounds);
             
+            // Apply material colors first
             if (buildingGeometry.materials) {
                 console.log('Materials loaded:', buildingGeometry.materials.size);
                 OBJLoader.applyMaterialColors(buildingGeometry, buildingGeometry.materials);
             }
             
-            const building = this.renderer.addObject(
-                buildingGeometry,
-                new Vector3(0, 0, 0),
-                new Vector3(0, 0, 0),
-                new Vector3(1, 1, 1)
-            );
-            this.objModels.push(building);
+            // Split geometry by material
+            const geometriesByMaterial = OBJLoader.splitByMaterial(buildingGeometry);
+            console.log('Split into materials:', Object.keys(geometriesByMaterial));
+            
+            // Load texture for quadro (material "Materiais")
+            let quadroTexture = null;
+            if (buildingGeometry.materials) {
+                const quadroMaterial = buildingGeometry.materials.get('Materiais');
+                if (quadroMaterial && quadroMaterial.map_Kd) {
+                    console.log(`Loading quadro texture: ${quadroMaterial.map_Kd}`);
+                    try {
+                        const texturePath = quadroMaterial.map_Kd.replace(/\\/g, '/');
+                        const textureUrl = `./assets/textures/${texturePath.split('/').pop()}`;
+                        quadroTexture = await this.renderer.loadTexture(textureUrl);
+                        console.log('Quadro texture loaded successfully');
+                    } catch (error) {
+                        console.error('Failed to load quadro texture:', error);
+                    }
+                }
+            }
+            
+            // Render each material as separate object
+            for (const [materialName, geom] of Object.entries(geometriesByMaterial)) {
+                const texture = (materialName === 'Materiais') ? quadroTexture : null;
+                const obj = this.renderer.addObject(
+                    geom,
+                    new Vector3(0, 0, 0),
+                    new Vector3(0, 0, 0),
+                    new Vector3(1, 1, 1),
+                    texture
+                );
+                this.objModels.push(obj);
+                if (texture) {
+                    console.log(`Material "${materialName}" rendered with texture`);
+                }
+            }
             
             const centerX = (buildingStats.bounds.min.x + buildingStats.bounds.max.x) / 2;
             const centerZ = (buildingStats.bounds.min.z + buildingStats.bounds.max.z) / 2;
@@ -247,6 +283,17 @@ class Application {
             }
         } else {
             this.keyStates.mPressed = false;
+        }
+        
+        // Toggle lights with P key
+        if (this.input.isKeyDown('KeyP')) {
+            if (!this.keyStates.pPressed) {
+                this.renderer.enableLights = !this.renderer.enableLights;
+                console.log('Lights:', this.renderer.enableLights ? 'ON' : 'OFF');
+                this.keyStates.pPressed = true;
+            }
+        } else {
+            this.keyStates.pPressed = false;
         }
         
         if (this.input.isKeyDown('KeyN')) {

@@ -105,6 +105,28 @@ class MTLLoader {
                         currentMaterial.illum = parseInt(parts[1]);
                     }
                     break;
+
+                case 'map_Kd':
+                    if (currentMaterial) {
+                        // Extract texture path (may have spaces)
+                        const texturePath = line.substring(line.indexOf(' ') + 1).trim();
+                        currentMaterial.map_Kd = texturePath;
+                    }
+                    break;
+
+                case 'map_Ks':
+                    if (currentMaterial) {
+                        const texturePath = line.substring(line.indexOf(' ') + 1).trim();
+                        currentMaterial.map_Ks = texturePath;
+                    }
+                    break;
+
+                case 'map_Ka':
+                    if (currentMaterial) {
+                        const texturePath = line.substring(line.indexOf(' ') + 1).trim();
+                        currentMaterial.map_Ka = texturePath;
+                    }
+                    break;
             }
         }
 

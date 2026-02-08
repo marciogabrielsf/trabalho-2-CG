@@ -4,8 +4,12 @@ class Renderer {
         this.shaderProgram = null;
         this.objects = [];
         
-        this.lightPosition = new Vector3(3, 5, 3);
-        this.lightColor = new Vector3(1.0, 1.0, 1.0);
+        // Multiple lights - one for each monitor
+        this.lights = [
+            { position: new Vector3(22.0, 2.2, -3.7), color: new Vector3(1.0, 0.9, 0.8) },
+            { position: new Vector3(22.0, 2.2, -5.8), color: new Vector3(0.8, 0.9, 1.0) },
+            { position: new Vector3(22.0, 2.2, -7.8), color: new Vector3(0.9, 1.0, 0.9) }
+        ];
         
         this.skybox = null;
         this.skyboxShader = null;
@@ -17,6 +21,8 @@ class Renderer {
         this.debugShadows = false;
         this.debugTexture = false;
         this.shadowRenderCount = 0;
+        
+        this.enableLights = true;
         
         this.renderCount = 0;
     }
@@ -54,8 +60,6 @@ class Renderer {
         
         const skyboxGeometry = SkyboxGeometry.createGeometry();
         this.skyboxBuffers = this.createBuffers(skyboxGeometry);
-        
-        console.log('Skybox initialized');
     }
 
     initializeShadows() {
@@ -67,11 +71,6 @@ class Renderer {
             this.useShadows = false;
             return;
         }
-        
-        console.log('Shadow mapping initialized');
-        console.log('Shadow map size:', this.shadowMap.width, 'x', this.shadowMap.height);
-        console.log('Shadow framebuffer:', this.shadowMap.framebuffer);
-        console.log('Shadow depth texture:', this.shadowMap.depthTexture);
     }
 
     createBuffers(geometry) {
@@ -127,10 +126,23 @@ class Renderer {
     }
 
     updateLight(time) {
-        const radius = 5;
-        this.lightPosition.x = Math.cos(time * 0.5) * radius;
-        this.lightPosition.z = Math.sin(time * 0.5) * radius;
-        this.lightPosition.y = 3 + Math.sin(time) * 2;
+        // Animate lights with slight pulsing effect
+        for (let i = 0; i < this.lights.length; i++) {
+            const baseIntensity = 1.0;
+            const pulse = 0.1 * Math.sin(time * 2.0 + i * Math.PI * 0.6);
+            const intensity = baseIntensity + pulse;
+            
+            // Keep original colors but adjust intensity
+            const baseColor = i === 0 ? [1.0, 0.9, 0.8] : 
+                            i === 1 ? [0.8, 0.9, 1.0] : 
+                                      [0.9, 1.0, 0.9];
+            
+            this.lights[i].color = new Vector3(
+                baseColor[0] * intensity,
+                baseColor[1] * intensity,
+                baseColor[2] * intensity
+            );
+        }
     }
 
     render(camera) {
@@ -153,7 +165,8 @@ class Renderer {
         const gl = this.gl;
         const shadowProgram = this.shadowMap.depthProgram;
         
-        this.shadowMap.updateLightMatrices(this.lightPosition);
+        // Use first light for shadows
+        this.shadowMap.updateLightMatrices(this.lights[0].position);
         this.shadowMap.bind();
         
         gl.useProgram(shadowProgram.program);
@@ -179,15 +192,6 @@ class Renderer {
         this.shadowMap.unbind(gl.canvas.width, gl.canvas.height);
         
         this.shadowRenderCount++;
-        if (this.shadowRenderCount === 1) {
-            console.log('Shadow map first render:');
-            console.log('  - Objects rendered:', objectsRendered);
-            console.log('  - Light position:', this.lightPosition);
-            console.log('  - Framebuffer complete:', gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE);
-        }
-        if (this.shadowRenderCount % 60 === 0) {
-            console.log('Shadow map rendered:', this.shadowRenderCount, 'times');
-        }
     }
 
     renderSkybox(camera) {
@@ -245,28 +249,28 @@ class Renderer {
             gl.uniform1i(program.uniformLocations.debugShadows, 0);
         }
         
-        gl.uniform3f(program.uniformLocations.lightPosition, 
-            this.lightPosition.x, this.lightPosition.y, this.lightPosition.z);
+        // Pass multiple lights to shader
+        const activeLights = this.enableLights ? this.lights.length : 0;
+        gl.uniform1i(program.uniformLocations.numLights, activeLights);
+        
+        for (let i = 0; i < this.lights.length; i++) {
+            const light = this.lights[i];
+            if (program.uniformLocations.lightPositions[i] !== null) {
+                gl.uniform3f(
+                    program.uniformLocations.lightPositions[i], 
+                    light.position.x, light.position.y, light.position.z
+                );
+            }
+            if (program.uniformLocations.lightColors[i] !== null) {
+                gl.uniform3f(
+                    program.uniformLocations.lightColors[i],
+                    light.color.x, light.color.y, light.color.z
+                );
+            }
+        }
+        
         gl.uniform3f(program.uniformLocations.viewPosition,
             camera.position.x, camera.position.y, camera.position.z);
-        gl.uniform3f(program.uniformLocations.lightColor,
-            this.lightColor.x, this.lightColor.y, this.lightColor.z);
-
-        if (this.renderCount === 0) {
-            console.log('Total objects to render:', this.objects.length);
-            let groundCount = 0;
-            this.objects.forEach((obj, idx) => {
-                if (obj.position.y === 0) {
-                    groundCount++;
-                    console.log(`Object ${idx} at y=0:`, {
-                        hasTexture: !!obj.texture,
-                        hasTexCoordBuffer: !!obj.buffers.texCoord,
-                        vertexCount: obj.buffers.vertexCount
-                    });
-                }
-            });
-            console.log('Objects with y=0:', groundCount);
-        }
 
         for (const object of this.objects) {
             this.renderObject(object, program);
@@ -297,14 +301,6 @@ class Renderer {
         const hasTexCoord = buffers.texCoord !== null && buffers.texCoord !== undefined;
         const hasTexture = object.texture !== null && object.texture !== undefined;
         
-        if (this.renderCount < 2 && object.position.y === 0) {
-            console.log('Ground plane render check (frame ' + this.renderCount + '):');
-            console.log('  - object.texture:', object.texture);
-            console.log('  - buffers.texCoord:', buffers.texCoord);
-            console.log('  - hasTexCoord:', hasTexCoord);
-            console.log('  - hasTexture:', hasTexture);
-        }
-        
         if (hasTexCoord && hasTexture) {
             gl.bindBuffer(gl.ARRAY_BUFFER, buffers.texCoord);
             gl.vertexAttribPointer(program.attribLocations.texCoord, 2, gl.FLOAT, false, 0, 0);
@@ -315,23 +311,12 @@ class Renderer {
             gl.uniform1i(program.uniformLocations.texture, 2);
             gl.uniform1i(program.uniformLocations.useTexture, 1);
             gl.uniform1i(program.uniformLocations.debugTexture, this.debugTexture ? 1 : 0);
-            
-            if (this.renderCount < 2 && object.position.y === 0) {
-                console.log('  - TEXTURE ENABLED on TEXTURE2');
-                console.log('  - GL Error after texture bind:', gl.getError());
-                console.log('  - useTexture set to: 1');
-                console.log('  - debugTexture set to:', this.debugTexture ? 1 : 0);
-            }
         } else {
             if (program.attribLocations.texCoord >= 0) {
                 gl.disableVertexAttribArray(program.attribLocations.texCoord);
             }
             gl.uniform1i(program.uniformLocations.useTexture, 0);
             gl.uniform1i(program.uniformLocations.debugTexture, 0);
-            
-            if (this.renderCount < 2 && object.position.y === 0) {
-                console.log('  - TEXTURE DISABLED (missing texCoord or texture)');
-            }
         }
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.index);
@@ -379,10 +364,6 @@ class Renderer {
             image.onload = () => {
                 gl.bindTexture(gl.TEXTURE_2D, texture);
                 
-                console.log('MAX_TEXTURE_SIZE:', gl.getParameter(gl.MAX_TEXTURE_SIZE));
-                console.log('Image size:', image.width, 'x', image.height);
-                console.log('Is power of 2:', this.isPowerOf2(image.width) && this.isPowerOf2(image.height));
-                
                 let finalImage = image;
                 
                 if (!this.isPowerOf2(image.width) || !this.isPowerOf2(image.height)) {
@@ -397,11 +378,9 @@ class Renderer {
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
                     finalImage = canvas;
-                    console.log('Resized to POT:', canvas.width, 'x', canvas.height);
                 }
                 
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, finalImage);
-                console.log('Error after texImage2D:', gl.getError());
                 
                 gl.generateMipmap(gl.TEXTURE_2D);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
@@ -409,11 +388,6 @@ class Renderer {
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
                 
-                console.log('MIN_FILTER:', gl.getTexParameter(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER));
-                console.log('WRAP_S:', gl.getTexParameter(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S));
-                console.log('WRAP_T:', gl.getTexParameter(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T));
-                
-                console.log('Texture loaded:', url);
                 resolve(texture);
             };
             image.onerror = () => {

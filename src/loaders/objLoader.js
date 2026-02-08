@@ -206,6 +206,72 @@ class OBJLoader {
         console.log(`Applied materials to ${faceMaterials.length} vertices`);
     }
 
+    static splitByMaterial(geometry) {
+        if (!geometry.faceMaterials) {
+            return { 'default': geometry };
+        }
+
+        const geometriesByMaterial = {};
+        const faceMaterials = geometry.faceMaterials;
+
+        // Group vertices by material
+        const materialGroups = {};
+        for (let i = 0; i < faceMaterials.length; i++) {
+            const materialName = faceMaterials[i] || 'default';
+            if (!materialGroups[materialName]) {
+                materialGroups[materialName] = {
+                    positions: [],
+                    colors: [],
+                    normals: [],
+                    texCoords: []
+                };
+            }
+            
+            const group = materialGroups[materialName];
+            group.positions.push(
+                geometry.positions[i * 3 + 0],
+                geometry.positions[i * 3 + 1],
+                geometry.positions[i * 3 + 2]
+            );
+            group.colors.push(
+                geometry.colors[i * 3 + 0],
+                geometry.colors[i * 3 + 1],
+                geometry.colors[i * 3 + 2]
+            );
+            group.normals.push(
+                geometry.normals[i * 3 + 0],
+                geometry.normals[i * 3 + 1],
+                geometry.normals[i * 3 + 2]
+            );
+            if (geometry.texCoords.length > 0) {
+                group.texCoords.push(
+                    geometry.texCoords[i * 2 + 0],
+                    geometry.texCoords[i * 2 + 1]
+                );
+            }
+        }
+
+        // Create separate geometries
+        for (const [materialName, group] of Object.entries(materialGroups)) {
+            const vertexCount = group.positions.length / 3;
+            const indices = new Uint16Array(vertexCount);
+            for (let i = 0; i < vertexCount; i++) {
+                indices[i] = i;
+            }
+
+            geometriesByMaterial[materialName] = {
+                positions: new Float32Array(group.positions),
+                colors: new Float32Array(group.colors),
+                normals: new Float32Array(group.normals),
+                texCoords: group.texCoords.length > 0 ? new Float32Array(group.texCoords) : new Float32Array(0),
+                indices: indices,
+                vertexCount: indices.length
+            };
+        }
+
+        return geometriesByMaterial;
+    }
+
     static hasInvalidNormals(normals) {
         for (let i = 0; i < normals.length; i += 3) {
             const x = normals[i];
