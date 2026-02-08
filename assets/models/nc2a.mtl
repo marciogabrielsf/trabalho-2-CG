@@ -14,7 +14,7 @@ map_Kd C:/Users/Suyane Carvalho/trabalho-2-CG/assets/textures/gesad.png
 newmtl Materiais.001
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 0.001555 0.000000 0.001137
+Kd 1.000000 0.305351 0.071422
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
