@@ -149,6 +149,7 @@ class ShaderProgram {
                 
                 vec3 lighting = ambient + (1.0 - shadow) * (diffuse + specular);
                 vec3 result = lighting * baseColor;
+                result = clamp(result, 0.0, 1.0);
                 
                 gl_FragColor = vec4(result, 1.0);
             }
@@ -161,23 +162,30 @@ class ShaderProgram {
 
         const vertexShader = this.compileShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
         if (!vertexShader) {
-            console.error('Failed to compile vertex shader');
+            console.error("Failed to compile vertex shader");
             return null;
         }
-        
+
         const fragmentShader = this.compileShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
         if (!fragmentShader) {
-            console.error('Failed to compile fragment shader');
+            console.error("Failed to compile fragment shader");
             return null;
         }
 
         const program = gl.createProgram();
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
+
+        // Bind attribute locations explicitly for ANGLE/Chromium compatibility
+        gl.bindAttribLocation(program, 0, "aPosition");
+        gl.bindAttribLocation(program, 1, "aColor");
+        gl.bindAttribLocation(program, 2, "aNormal");
+        gl.bindAttribLocation(program, 3, "aTexCoord");
+
         gl.linkProgram(program);
 
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            console.error('Program linking error:', gl.getProgramInfoLog(program));
+            console.error("Program linking error:", gl.getProgramInfoLog(program));
             return null;
         }
 
@@ -194,27 +202,27 @@ class ShaderProgram {
         const programInfo = {
             program: program,
             attribLocations: {
-                position: gl.getAttribLocation(program, 'aPosition'),
-                color: gl.getAttribLocation(program, 'aColor'),
-                normal: gl.getAttribLocation(program, 'aNormal'),
-                texCoord: gl.getAttribLocation(program, 'aTexCoord')
+                position: gl.getAttribLocation(program, "aPosition"),
+                color: gl.getAttribLocation(program, "aColor"),
+                normal: gl.getAttribLocation(program, "aNormal"),
+                texCoord: gl.getAttribLocation(program, "aTexCoord"),
             },
             uniformLocations: {
-                modelMatrix: gl.getUniformLocation(program, 'uModelMatrix'),
-                viewMatrix: gl.getUniformLocation(program, 'uViewMatrix'),
-                projectionMatrix: gl.getUniformLocation(program, 'uProjectionMatrix'),
+                modelMatrix: gl.getUniformLocation(program, "uModelMatrix"),
+                viewMatrix: gl.getUniformLocation(program, "uViewMatrix"),
+                projectionMatrix: gl.getUniformLocation(program, "uProjectionMatrix"),
                 lightPositions: lightPositions,
                 lightColors: lightColors,
-                numLights: gl.getUniformLocation(program, 'uNumLights'),
-                viewPosition: gl.getUniformLocation(program, 'uViewPosition'),
-                lightSpaceMatrix: gl.getUniformLocation(program, 'uLightSpaceMatrix'),
-                shadowMap: gl.getUniformLocation(program, 'uShadowMap'),
-                texture: gl.getUniformLocation(program, 'uTexture'),
-                useShadows: gl.getUniformLocation(program, 'uUseShadows'),
-                debugShadows: gl.getUniformLocation(program, 'uDebugShadows'),
-                useTexture: gl.getUniformLocation(program, 'uUseTexture'),
-                debugTexture: gl.getUniformLocation(program, 'uDebugTexture')
-            }
+                numLights: gl.getUniformLocation(program, "uNumLights"),
+                viewPosition: gl.getUniformLocation(program, "uViewPosition"),
+                lightSpaceMatrix: gl.getUniformLocation(program, "uLightSpaceMatrix"),
+                shadowMap: gl.getUniformLocation(program, "uShadowMap"),
+                texture: gl.getUniformLocation(program, "uTexture"),
+                useShadows: gl.getUniformLocation(program, "uUseShadows"),
+                debugShadows: gl.getUniformLocation(program, "uDebugShadows"),
+                useTexture: gl.getUniformLocation(program, "uUseTexture"),
+                debugTexture: gl.getUniformLocation(program, "uDebugTexture"),
+            },
         };
 
         return programInfo;
@@ -226,7 +234,7 @@ class ShaderProgram {
         gl.compileShader(shader);
 
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
+            console.error("Shader compilation error:", gl.getShaderInfoLog(shader));
             gl.deleteShader(shader);
             return null;
         }

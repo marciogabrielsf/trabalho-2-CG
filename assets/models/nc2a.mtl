@@ -9,12 +9,12 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-map_Kd C:/Users/Suyane Carvalho/trabalho-2-CG/assets/textures/gesad.png
+map_Kd //wsl.localhost/Ubuntu/home/marciogabrielsf/code/trabalho-2-CG/assets/textures/gesad.png
 
 newmtl Materiais.001
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
-Kd 1.000000 0.305351 0.071422
+Kd 0.001555 0.000000 0.001137
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
@@ -101,7 +101,7 @@ Ni 1.500000
 d 1.000000
 illum 2
 
-newmtl Material
+newmtl Material.007
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.800007 0.559550 0.064279
@@ -111,7 +111,7 @@ Ni 1.500000
 d 1.000000
 illum 2
 
-newmtl Material.001
+newmtl Material.008
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.091020 0.103133 0.055285
@@ -121,7 +121,7 @@ Ni 1.500000
 d 1.000000
 illum 2
 
-newmtl Material.002
+newmtl Material.009
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.800000 0.800000 0.800000
@@ -131,7 +131,7 @@ Ni 1.500000
 d 1.000000
 illum 2
 
-newmtl Material.003
+newmtl Material.010
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.800023 0.161426 0.011758
@@ -141,7 +141,7 @@ Ni 1.500000
 d 1.000000
 illum 2
 
-newmtl Material.004
+newmtl Material.011
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.470222 0.800023 0.607508
@@ -151,7 +151,7 @@ Ni 1.500000
 d 1.000000
 illum 2
 
-newmtl Material.005
+newmtl Material.012
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.014740 0.012688 0.155159
@@ -161,7 +161,7 @@ Ni 1.500000
 d 1.000000
 illum 2
 
-newmtl Material.006
+newmtl Material.013
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.588908 0.588908 0.588908
@@ -170,6 +170,16 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
+
+newmtl Material.014
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
 
 newmtl base.002
 Ns 250.000000
