@@ -146,26 +146,37 @@ class Application {
             const geometriesByMaterial = OBJLoader.splitByMaterial(buildingGeometry);
             console.log("Split into materials:", Object.keys(geometriesByMaterial));
 
-            // Load texture for quadro (material "Materiais")
-            let quadroTexture = null;
+            // Load textures for all materials that have map_Kd
+            const texturesByMaterial = new Map();
             if (buildingGeometry.materials) {
-                const quadroMaterial = buildingGeometry.materials.get("Materiais");
-                if (quadroMaterial && quadroMaterial.map_Kd) {
-                    console.log(`Loading quadro texture: ${quadroMaterial.map_Kd}`);
-                    try {
-                        const texturePath = quadroMaterial.map_Kd.replace(/\\/g, "/");
-                        const textureUrl = `./assets/textures/${texturePath.split("/").pop()}`;
-                        quadroTexture = await this.renderer.loadTexture(textureUrl);
-                        console.log("Quadro texture loaded successfully");
-                    } catch (error) {
-                        console.error("Failed to load quadro texture:", error);
+                for (const [materialName, material] of buildingGeometry.materials) {
+                    if (material.map_Kd) {
+                        console.log(`Loading texture for material "${materialName}": ${material.map_Kd}`);
+                        try {
+                            const texturePath = material.map_Kd.replace(/\\/g, "/");
+                            const textureUrl = `./assets/textures/${texturePath.split("/").pop()}`;
+                            const texture = await this.renderer.loadTexture(textureUrl);
+                            texturesByMaterial.set(materialName, texture);
+                            console.log(`Texture loaded successfully for "${materialName}"`);
+                        } catch (error) {
+                            console.error(`Failed to load texture for "${materialName}":`, error);
+                        }
                     }
                 }
             }
 
             // Render each material as separate object
             for (const [materialName, geom] of Object.entries(geometriesByMaterial)) {
-                const texture = materialName === "Materiais" ? quadroTexture : null;
+                const texture = texturesByMaterial.get(materialName) || null;
+                
+                // Inverter coordenadas de textura para o quadro gesad
+                if (materialName === "Materiais" && geom.texCoords) {
+                    console.log(`Invertendo coordenadas UV para material "${materialName}"`);
+                    for (let i = 0; i < geom.texCoords.length; i += 2) {
+                        geom.texCoords[i] = 1.0 - geom.texCoords[i]; // Inverter coordenada U (horizontal)
+                    }
+                }
+                
                 const obj = this.renderer.addObject(
                     geom,
                     new Vector3(0, 0, 0),

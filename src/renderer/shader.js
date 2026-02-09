@@ -101,7 +101,9 @@ class ShaderProgram {
                 vec3 baseColor = vColor;
                 
                 if(uUseTexture == 1) {
-                    vec4 texColor = texture2D(uTexture, vTexCoord);
+                    // Flip U coordinate to fix mirrored textures
+                    vec2 flippedTexCoord = vec2(1.0 - vTexCoord.x, vTexCoord.y);
+                    vec4 texColor = texture2D(uTexture, flippedTexCoord);
                     baseColor = texColor.rgb;
                     
                     if(uDebugTexture == 1) {
