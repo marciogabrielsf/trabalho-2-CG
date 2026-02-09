@@ -1,3 +1,9 @@
+const GameState = {
+    MENU: 'menu',
+    CONTROLS: 'controls',
+    PLAYING: 'playing'
+};
+
 class Application {
     constructor() {
         this.canvas = null;
@@ -5,11 +11,15 @@ class Application {
         this.camera = null;
         this.renderer = null;
         this.input = null;
+        this.menu = null;
 
         this.lastTime = 0;
         this.deltaTime = 0;
         this.animatedCubes = [];
         this.objModels = [];
+        
+        this.gameState = GameState.MENU;
+        this.gameInitialized = false;
         this.doors = [];
 
         this.keyStates = {
@@ -17,6 +27,7 @@ class Application {
             lPressed: false,
             mPressed: false,
             nPressed: false,
+            escPressed: false,
             oPressed: false,
         };
     }
@@ -43,6 +54,7 @@ class Application {
             lPressed: false,
             mPressed: false,
             pPressed: false,
+            escPressed: false,
             nPressed: false,
             oPressed: false,
         };
@@ -50,13 +62,52 @@ class Application {
         const aspect = this.canvas.width / this.canvas.height;
         this.camera = new Camera(45, aspect, 0.1, 200);
 
+        this.menu = new MainMenu(this.gl, this.canvas);
+        await this.menu.initialize();
+        
+        this.showMenuOverlay();
+
+        return true;
+    }
+    
+    showMenuOverlay() {
+        const menuOverlay = document.getElementById('menuOverlay');
+        const controlsOverlay = document.getElementById('controlsOverlay');
+        const info = document.getElementById('info');
+        
+        if (menuOverlay) menuOverlay.style.display = 'flex';
+        if (controlsOverlay) controlsOverlay.style.display = 'none';
+        if (info) info.style.display = 'none';
+    }
+    
+    hideMenuOverlay() {
+        const menuOverlay = document.getElementById('menuOverlay');
+        const controlsOverlay = document.getElementById('controlsOverlay');
+        const info = document.getElementById('info');
+        
+        if (menuOverlay) menuOverlay.style.display = 'none';
+        if (controlsOverlay) controlsOverlay.style.display = 'none';
+        if (info) info.style.display = 'block';
+    }
+    
+    showControlsOverlay() {
+        const menuOverlay = document.getElementById('menuOverlay');
+        const controlsOverlay = document.getElementById('controlsOverlay');
+        
+        if (menuOverlay) menuOverlay.style.display = 'none';
+        if (controlsOverlay) controlsOverlay.style.display = 'flex';
+    }
+    
+    async initializeGame() {
+        if (this.gameInitialized) return;
+        
         this.renderer = new Renderer(this.gl);
         if (!this.renderer.initialize()) {
             return false;
         }
 
         await this.setupScene();
-
+        this.gameInitialized = true;
         return true;
     }
 
@@ -99,34 +150,7 @@ class Application {
             hasTexture: !!groundPlane.texture,
         });
 
-        const cubeGeometry = Cube.createGeometry();
-
-        const centerCube = this.renderer.addObject(
-            cubeGeometry,
-            new Vector3(10, 1, 10),
-            new Vector3(0, 0, 0),
-            new Vector3(1, 1, 1),
-        );
-        centerCube.angularVelocity = new Vector3(0.5, 1.0, 0.3);
-        this.animatedCubes.push(centerCube);
-
-        const cube2 = this.renderer.addObject(
-            cubeGeometry,
-            new Vector3(-10, 0.5, 10),
-            new Vector3(0, 0, 0),
-            new Vector3(0.5, 0.5, 0.5),
-        );
-        cube2.angularVelocity = new Vector3(0.3, 0.7, 0.2);
-        this.animatedCubes.push(cube2);
-
-        const cube3 = this.renderer.addObject(
-            cubeGeometry,
-            new Vector3(-10, 0.75, -10),
-            new Vector3(0, 0, 0),
-            new Vector3(0.75, 0.75, 0.75),
-        );
-        cube3.angularVelocity = new Vector3(0.8, 0.4, 0.6);
-        this.animatedCubes.push(cube3);
+        // Cubos removidos
 
         await this.loadOBJModels();
     }
@@ -146,7 +170,9 @@ class Application {
                 OBJLoader.applyMaterialColors(buildingGeometry, buildingGeometry.materials);
             }
 
-            // Load textures for all materials that have map_Kd
+            const geometriesByMaterial = OBJLoader.splitByMaterial(buildingGeometry);
+            console.log("Split into materials:", Object.keys(geometriesByMaterial));
+
             const texturesByMaterial = new Map();
             if (buildingGeometry.materials) {
                 for (const [materialName, material] of buildingGeometry.materials) {
@@ -181,7 +207,6 @@ class Application {
                 for (const [materialName, geom] of Object.entries(geometriesByMaterial)) {
                     const texture = texturesByMaterial.get(materialName) || null;
 
-                    // Inverter coordenadas de textura para o quadro gesad
                     if (materialName === "Materiais" && geom.texCoords) {
                         console.log(`Invertendo coordenadas UV para material "${materialName}"`);
                         for (let i = 0; i < geom.texCoords.length; i += 2) {
@@ -279,6 +304,12 @@ class Application {
 
             console.log(`Building center: (${centerX.toFixed(2)}, ${centerZ.toFixed(2)})`);
             console.log(`Building height: ${height.toFixed(2)}`);
+            
+            // Adicionar pista (estrada) ao lado do prédio
+            this.createRoad();
+            
+            // Adicionar árvores ao redor do prédio
+            this.createTrees();
         } catch (error) {
             console.error("Failed to load building:", error);
         }
@@ -361,61 +392,152 @@ class Application {
             console.error("Failed to load door:", error);
         }
 
-        try {
-            const pyramidGeometry = await OBJLoader.load("./assets/models/pyramid.obj");
-            const pyramidStats = OBJLoader.getStats(pyramidGeometry);
-            console.log("Pyramid loaded:", pyramidStats);
-
-            const pyramid = this.renderer.addObject(
-                pyramidGeometry,
-                new Vector3(-5, 1, 0),
-                new Vector3(0, 0, 0),
-                new Vector3(0.8, 0.8, 0.8),
-            );
-            pyramid.angularVelocity = new Vector3(0.2, 0.8, 0.1);
-            this.animatedCubes.push(pyramid);
-            this.objModels.push(pyramid);
-        } catch (error) {
-            console.error("Failed to load pyramid:", error);
-        }
-
-        try {
-            const sphereGeometry = await OBJLoader.load("./assets/models/sphere.obj");
-            const sphereStats = OBJLoader.getStats(sphereGeometry);
-            console.log("Sphere loaded:", sphereStats);
-
-            const sphere = this.renderer.addObject(
-                sphereGeometry,
-                new Vector3(5, 1.5, 0),
-                new Vector3(0, 0, 0),
-                new Vector3(0.7, 0.7, 0.7),
-            );
-            sphere.angularVelocity = new Vector3(0.3, 0.5, 0.4);
-            this.animatedCubes.push(sphere);
-            this.objModels.push(sphere);
-        } catch (error) {
-            console.error("Failed to load sphere:", error);
-        }
-
-        try {
-            const teapotGeometry = await OBJLoader.load("./assets/models/teapot.obj");
-            const teapotStats = OBJLoader.getStats(teapotGeometry);
-            console.log("Teapot loaded:", teapotStats);
-
-            const teapot = this.renderer.addObject(
-                teapotGeometry,
-                new Vector3(0, 1, -8),
-                new Vector3(0, 0, 0),
-                new Vector3(1.5, 1.5, 1.5),
-            );
-            teapot.angularVelocity = new Vector3(0.1, 0.6, 0.2);
-            this.animatedCubes.push(teapot);
-            this.objModels.push(teapot);
-        } catch (error) {
-            console.error("Failed to load teapot:", error);
-        }
-
         console.log(`Loaded ${this.objModels.length} OBJ models successfully`);
+    }
+
+    createRoad() {
+        console.log("Creating roads...");
+        
+
+        const grassWidth = 100;
+        const roadLength = grassWidth;
+        
+        const roadGeometry = Plane.createGeometry(roadLength, 10, 1);
+        
+        for (let i = 0; i < roadGeometry.colors.length; i += 3) {
+            roadGeometry.colors[i] = 0.2;     // R
+            roadGeometry.colors[i + 1] = 0.2; // G
+            roadGeometry.colors[i + 2] = 0.2; // B
+        }
+        
+        const road = this.renderer.addObject(
+            roadGeometry,
+            new Vector3(0, 0.1, 30),
+            new Vector3(0, 0, 0), 
+            new Vector3(1, 1, 1)
+        );
+        this.objModels.push(road);
+        
+        console.log("Road created at position (0, 0.1, 30)");
+        
+        const sideRoadGeometry = Plane.createGeometry(10, roadLength, 1);
+        
+        for (let i = 0; i < sideRoadGeometry.colors.length; i += 3) {
+            sideRoadGeometry.colors[i] = 0.2;     // R
+            sideRoadGeometry.colors[i + 1] = 0.2; // G
+            sideRoadGeometry.colors[i + 2] = 0.2; // B
+        }
+        
+        const sideRoad = this.renderer.addObject(
+            sideRoadGeometry,
+            new Vector3(40, 0.1, 0),
+            new Vector3(0, 0, 0), 
+            new Vector3(1, 1, 1)
+        );
+        this.objModels.push(sideRoad);
+        
+        console.log("Side road created at position (40, 0.1, 0)");
+    }
+
+    createTrees() {
+        console.log("Creating trees...");
+        
+        const treePositions = [
+            new Vector3(-30, 0, 15),   
+            new Vector3(30, 0, 15),   
+            new Vector3(30, 0, 20),   
+        ];
+        
+        treePositions.forEach((position, index) => {
+            const trunkGeometry = Tree.createTrunkGeometry(0.4, 0.3, 2.5, 8);
+            const trunk = this.renderer.addObject(
+                trunkGeometry,
+                position,
+                new Vector3(0, 0, 0),
+                new Vector3(1, 1, 1)
+            );
+            this.objModels.push(trunk);
+            
+            const foliageGeometry = Tree.createFoliageGeometry(2, 4, 10);
+            const foliage = this.renderer.addObject(
+                foliageGeometry,
+                new Vector3(position.x, position.y + 2.5, position.z),
+                new Vector3(0, 0, 0),
+                new Vector3(1, 1, 1)
+            );
+            this.objModels.push(foliage);
+        });
+        
+        console.log(`Created ${treePositions.length} trees around the building`);
+    }
+
+    updateMenu(currentTime) {
+        this.deltaTime = (currentTime - this.lastTime) / 1000;
+        this.lastTime = currentTime;
+        
+        this.menu.update(this.deltaTime);
+        
+        // Processar input do menu
+        const selection = this.menu.handleInput(this.input);
+        
+        if (selection === 0) {
+            // Iniciar Jogo
+            console.log('Iniciando jogo...');
+            this.startGame();
+        } else if (selection === 1) {
+            // Controles
+            console.log('Abrindo controles...');
+            this.gameState = GameState.CONTROLS;
+            this.showControlsOverlay();
+        } else if (selection === 2) {
+            // Sair - apenas mostra mensagem
+            console.log('Opção Sair selecionada');
+            alert('Obrigado por jogar!');
+        }
+        
+        this.input.endFrame();
+    }
+    
+    updateControls(currentTime) {
+        this.deltaTime = (currentTime - this.lastTime) / 1000;
+        this.lastTime = currentTime;
+        
+        // Atualizar o cubo rotativo do menu
+        this.menu.update(this.deltaTime);
+        
+        // Verificar se o botão voltar foi clicado
+        if (this.menu.hasPendingBack()) {
+            this.gameState = GameState.MENU;
+            this.showMenuOverlay();
+            this.input.endFrame();
+            return;
+        }
+        
+        // Voltar ao menu com ESC ou Enter ou Backspace
+        if (this.input.isKeyDown('Escape') || this.input.isKeyDown('Backspace')) {
+            if (!this.keyStates.escPressed) {
+                this.keyStates.escPressed = true;
+                this.gameState = GameState.MENU;
+                this.showMenuOverlay();
+            }
+        } else {
+            this.keyStates.escPressed = false;
+        }
+        
+        this.input.endFrame();
+    }
+    
+    async startGame() {
+        await this.initializeGame();
+        this.gameState = GameState.PLAYING;
+        this.hideMenuOverlay();
+        
+        // Focar no canvas para capturar input
+        this.canvas.focus();
+    }
+    
+    renderMenu() {
+        this.menu.render();
     }
 
     update(currentTime) {
@@ -495,12 +617,6 @@ class Application {
             door.update(this.deltaTime);
         }
 
-        for (const cube of this.animatedCubes) {
-            cube.rotation.x += cube.angularVelocity.x * this.deltaTime;
-            cube.rotation.y += cube.angularVelocity.y * this.deltaTime;
-            cube.rotation.z += cube.angularVelocity.z * this.deltaTime;
-        }
-
         this.renderer.updateLight(currentTime / 1000);
 
         // Atualizar estado anterior das teclas (necessário para wasKeyPressed)
@@ -508,12 +624,28 @@ class Application {
     }
 
     render() {
-        this.renderer.render(this.camera);
+        if (this.gameState === GameState.PLAYING && this.renderer) {
+            this.renderer.render(this.camera);
+        }
     }
 
     run(currentTime) {
-        this.update(currentTime);
-        this.render();
+        switch (this.gameState) {
+            case GameState.MENU:
+                this.updateMenu(currentTime);
+                this.renderMenu();
+                break;
+                
+            case GameState.CONTROLS:
+                this.updateControls(currentTime);
+                this.renderMenu();
+                break;
+                
+            case GameState.PLAYING:
+                this.update(currentTime);
+                this.render();
+                break;
+        }
 
         requestAnimationFrame((time) => this.run(time));
     }

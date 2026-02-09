@@ -238,6 +238,10 @@ class Renderer {
             false,
             projectionMatrix.elements,
         );
+        
+        // Passar o tempo para animação das nuvens
+        const time = performance.now() / 1000.0;
+        gl.uniform1f(skyboxProgram.uniformLocations.time, time);
 
         const buffers = this.skyboxBuffers;
 
