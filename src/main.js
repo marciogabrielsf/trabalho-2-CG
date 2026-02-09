@@ -1,4 +1,3 @@
-// Estados do jogo
 const GameState = {
     MENU: 'menu',
     CONTROLS: 'controls',
@@ -19,9 +18,9 @@ class Application {
         this.animatedCubes = [];
         this.objModels = [];
         
-        // Estado do jogo
         this.gameState = GameState.MENU;
         this.gameInitialized = false;
+        this.doors = [];
 
         this.keyStates = {
             kPressed: false,
@@ -29,6 +28,7 @@ class Application {
             mPressed: false,
             nPressed: false,
             escPressed: false,
+            oPressed: false,
         };
     }
 
@@ -55,16 +55,16 @@ class Application {
             mPressed: false,
             pPressed: false,
             escPressed: false,
+            nPressed: false,
+            oPressed: false,
         };
 
         const aspect = this.canvas.width / this.canvas.height;
         this.camera = new Camera(45, aspect, 0.1, 200);
 
-        // Inicializar menu
         this.menu = new MainMenu(this.gl, this.canvas);
         await this.menu.initialize();
         
-        // Mostrar o overlay do menu
         this.showMenuOverlay();
 
         return true;
@@ -170,11 +170,9 @@ class Application {
                 OBJLoader.applyMaterialColors(buildingGeometry, buildingGeometry.materials);
             }
 
-            // Split geometry by material
             const geometriesByMaterial = OBJLoader.splitByMaterial(buildingGeometry);
             console.log("Split into materials:", Object.keys(geometriesByMaterial));
 
-            // Load textures for all materials that have map_Kd
             const texturesByMaterial = new Map();
             if (buildingGeometry.materials) {
                 for (const [materialName, material] of buildingGeometry.materials) {
@@ -193,28 +191,110 @@ class Application {
                 }
             }
 
-            // Render each material as separate object
-            for (const [materialName, geom] of Object.entries(geometriesByMaterial)) {
-                const texture = texturesByMaterial.get(materialName) || null;
-                
-                // Inverter coordenadas de textura para o quadro gesad
-                if (materialName === "Materiais" && geom.texCoords) {
-                    console.log(`Invertendo coordenadas UV para material "${materialName}"`);
-                    for (let i = 0; i < geom.texCoords.length; i += 2) {
-                        geom.texCoords[i] = 1.0 - geom.texCoords[i]; // Inverter coordenada U (horizontal)
+            const objectsByName = OBJLoader.splitByObject(buildingGeometry);
+            console.log("Split into objects:", Object.keys(objectsByName));
+
+            const interiorDoorNames = new Set(["porta", "porta.001"]);
+            const interiorDoorEntries = [];
+
+            for (const [objectName, objectGeom] of Object.entries(objectsByName)) {
+                if (interiorDoorNames.has(objectName)) {
+                    interiorDoorEntries.push({ name: objectName, geometry: objectGeom });
+                    continue;
+                }
+
+                const geometriesByMaterial = OBJLoader.splitByMaterial(objectGeom);
+                for (const [materialName, geom] of Object.entries(geometriesByMaterial)) {
+                    const texture = texturesByMaterial.get(materialName) || null;
+
+                    if (materialName === "Materiais" && geom.texCoords) {
+                        console.log(`Invertendo coordenadas UV para material "${materialName}"`);
+                        for (let i = 0; i < geom.texCoords.length; i += 2) {
+                            geom.texCoords[i] = 1.0 - geom.texCoords[i]; // Inverter coordenada U (horizontal)
+                        }
+                    }
+
+                    const obj = this.renderer.addObject(
+                        geom,
+                        new Vector3(0, 0, 0),
+                        new Vector3(0, 0, 0),
+                        new Vector3(1, 1, 1),
+                        texture,
+                    );
+                    this.objModels.push(obj);
+                    if (texture) {
+                        console.log(`Material "${materialName}" rendered with texture`);
                     }
                 }
-                
-                const obj = this.renderer.addObject(
-                    geom,
-                    new Vector3(0, 0, 0),
-                    new Vector3(0, 0, 0),
-                    new Vector3(1, 1, 1),
-                    texture,
-                );
-                this.objModels.push(obj);
-                if (texture) {
-                    console.log(`Material "${materialName}" rendered with texture`);
+            }
+
+            if (interiorDoorEntries.length > 0) {
+                const interiorDoorData = [];
+
+                for (const entry of interiorDoorEntries) {
+                    const stats = OBJLoader.getStats(entry.geometry);
+                    const bounds = stats.bounds;
+                    const widthX = bounds.max.x - bounds.min.x;
+                    const widthZ = bounds.max.z - bounds.min.z;
+                    const centerX = (bounds.min.x + bounds.max.x) / 2;
+                    const centerZ = (bounds.min.z + bounds.max.z) / 2;
+                    const slideAxis = widthZ > widthX ? "z" : "x";
+                    const slideDistance = slideAxis === "z" ? widthZ : widthX;
+
+                    let doorTexture = null;
+                    if (entry.geometry.faceMaterials && buildingGeometry.materials) {
+                        for (const materialName of entry.geometry.faceMaterials) {
+                            const material = buildingGeometry.materials.get(materialName);
+                            if (material && material.map_Kd) {
+                                doorTexture = texturesByMaterial.get(materialName) || null;
+                                if (doorTexture) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    const doorObj = this.renderer.addObject(
+                        entry.geometry,
+                        new Vector3(0, 0, 0),
+                        new Vector3(0, 0, 0),
+                        new Vector3(1, 1, 1),
+                        doorTexture,
+                    );
+                    this.objModels.push(doorObj);
+
+                    interiorDoorData.push({
+                        centerX,
+                        centerZ,
+                        slideAxis,
+                        slideDistance,
+                        doorObj,
+                    });
+                }
+
+                if (interiorDoorData.length === 2) {
+                    const axis = interiorDoorData[0].slideAxis;
+                    if (axis === "x") {
+                        interiorDoorData.sort((a, b) => a.centerX - b.centerX);
+                    } else {
+                        interiorDoorData.sort((a, b) => a.centerZ - b.centerZ);
+                    }
+                    interiorDoorData[0].slideDirection = -1;
+                    interiorDoorData[1].slideDirection = 1;
+                } else {
+                    interiorDoorData[0].slideDirection = 1;
+                }
+
+                for (const data of interiorDoorData) {
+                    this.doors.push(
+                        new Door(data.doorObj, {
+                            isLeftDoor: data.slideDirection < 0,
+                            baseRotation: 0,
+                            slideAxis: data.slideAxis,
+                            slideDistance: data.slideDistance,
+                            slideDirection: data.slideDirection,
+                        }),
+                    );
                 }
             }
 
@@ -234,6 +314,83 @@ class Application {
             console.error("Failed to load building:", error);
         }
 
+        try {
+            const doorGeometry = await OBJLoader.load("./assets/models/porta.obj");
+            const doorStats = OBJLoader.getStats(doorGeometry);
+            console.log("Door loaded:", doorStats);
+
+            let doorTexture = null;
+            if (doorGeometry.materials) {
+                OBJLoader.applyMaterialColors(doorGeometry, doorGeometry.materials);
+                for (const [, material] of doorGeometry.materials) {
+                    if (material.map_Kd) {
+                        const texturePath = material.map_Kd.replace(/\\/g, "/");
+                        const textureUrl = `./assets/textures/${texturePath.split("/").pop()}`;
+                        try {
+                            doorTexture = await this.renderer.loadTexture(textureUrl);
+                        } catch (error) {
+                            console.error("Failed to load door texture:", error);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            const doorBounds = doorStats.bounds;
+
+            const widthX = doorBounds.max.x - doorBounds.min.x;
+            const widthZ = doorBounds.max.z - doorBounds.min.z;
+            const useZAxis = widthZ > widthX;
+
+            const slideAxis = useZAxis ? "z" : "x";
+            console.log("Door bounds:", doorBounds);
+
+            const door1 = this.renderer.addObject(
+                doorGeometry,
+                new Vector3(-0.27 - 17.69, 0.7 - 0.85, 10.75 - (-1.47)),
+                new Vector3(0, Math.PI, 0),
+                new Vector3(1.8, 1.5, 1.1),
+                doorTexture,
+            );
+
+            const door2 = this.renderer.addObject(
+                doorGeometry,
+                new Vector3(0.32 - 17.69, 0.7 - 0.85, 10.75 - (-1.47)),
+                new Vector3(0, Math.PI, 0),
+                new Vector3(1.8, 1.5, 1.1),
+                doorTexture,
+            );
+
+            this.objModels.push(door1);
+            this.objModels.push(door2);
+
+            const baseRotation = Math.PI;
+            const slideDistance = 0.5;
+
+            this.doors.push(
+                new Door(door1, {
+                    isLeftDoor: true,
+                    baseRotation,
+                    slideAxis,
+                    slideDistance,
+                    slideDirection: -1,
+                }),
+            );
+            this.doors.push(
+                new Door(door2, {
+                    isLeftDoor: false,
+                    baseRotation,
+                    slideAxis,
+                    slideDistance,
+                    slideDirection: 1,
+                }),
+            );
+
+            console.log("Doors initialized:", this.doors.length);
+
+        } catch (error) {
+            console.error("Failed to load door:", error);
+        }
 
         console.log(`Loaded ${this.objModels.length} OBJ models successfully`);
     }
@@ -442,10 +599,22 @@ class Application {
             this.keyStates.nPressed = false;
         }
 
-        for (const cube of this.animatedCubes) {
-            cube.rotation.x += cube.angularVelocity.x * this.deltaTime;
-            cube.rotation.y += cube.angularVelocity.y * this.deltaTime;
-            cube.rotation.z += cube.angularVelocity.z * this.deltaTime;
+        // Controlar portas com O key
+        if (this.input.isKeyDown("KeyO")) {
+            if (!this.keyStates.oPressed) {
+                console.log("KeyO down, toggling doors:", this.doors.length);
+                for (const door of this.doors) {
+                    door.toggle();
+                }
+                this.keyStates.oPressed = true;
+            }
+        } else {
+            this.keyStates.oPressed = false;
+        }
+
+        // Atualizar animação das portas
+        for (const door of this.doors) {
+            door.update(this.deltaTime);
         }
 
         this.renderer.updateLight(currentTime / 1000);

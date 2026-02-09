@@ -50,18 +50,21 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
             z-index: 100;
             pointer-events: none;
+            padding-top: 10%;
         }
         
         #menuTitle {
             font-size: 48px;
             color: #4CAF50;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-            margin-bottom: 50px;
+            margin-bottom: 20px;
             pointer-events: auto;
+            position: relative;
+            z-index: 101;
         }
         
         #menuOptions {
@@ -70,6 +73,8 @@
             align-items: center;
             gap: 15px;
             pointer-events: auto;
+            position: relative;
+            z-index: 101;
         }
         
         .menu-option {
@@ -91,13 +96,12 @@
         }
         
         #menuInstructions {
-            position: absolute;
-            bottom: 30px;
             color: #888;
             font-size: 14px;
+            margin-top: 20px;
+            pointer-events: auto;
         }
         
-        /* Tela de Controles */
         #controlsOverlay {
             position: absolute;
             top: 0;
@@ -182,7 +186,7 @@
     
     <!-- Tela de Controles -->
     <div id="controlsOverlay">
-        <h1 id="controlsTitle">🎮 Controles</h1>
+        <h1 id="controlsTitle">Controles</h1>
         <div id="controlsContent">
             <div class="controls-section">
                 <h3> Movimentação</h3>
@@ -198,6 +202,7 @@
                 <p><strong>↑ ↓ ← →</strong> Rotacionar câmera</p>
                 <p><strong>Mouse</strong> Olhar ao redor</p>
                 <p><strong>Q / E</strong> Subir/Descer (Noclip)</p>
+                <p><strong>O</strong> - Abrir/Fechar Portas</p>
                 <p><strong>V</strong> Toggle Noclip</p>
             </div>
             <div class="controls-section">
@@ -220,13 +225,14 @@
         <p><strong>Espaço</strong> - Pular</p>
         <p><strong>Setas</strong> - Rotacionar câmera</p>
         <p><strong>Q/E</strong> - Subir/Descer (Noclip)</p>
+        <p><strong>O</strong> - Abrir/Fechar Portas</p>
         <p><strong>V</strong> - Toggle Noclip</p>
         <p><strong>Shift</strong> - Aumentar velocidade</p>
         <p style="margin-top: 10px;"><strong>K</strong> - Toggle Skybox</p>
         <p><strong>L</strong> - Toggle Shadows</p>
         <p><strong>M</strong> - Debug Shadow Map</p>
         <p><strong>P</strong> - Ligar Luzes dos Monitores</p>
-        <p style="margin-top: 10px; color: #4CAF50;"><strong>🏢 Cenário:</strong> Prédio NC2A</p>
+        <p style="margin-top: 10px; color: #4CAF50;"><strong>Cenário:</strong> Prédio NC2A</p>
     </div>
     
     <canvas id="glCanvas"></canvas>
@@ -241,7 +247,6 @@
     <!-- Geometrias -->
     <script src="./src/geometry/cube.js"></script>
     <script src="./src/geometry/plane.js"></script>
-    <script src="./src/geometry/tree.js"></script>
     
     <!-- Skybox -->
     <script src="./src/skybox/skybox.js"></script>
@@ -260,14 +265,20 @@
     <script src="./src/renderer/renderer.js?v=3"></script>
     
     <!-- Input -->
-    <script src="./src/input/input.js?v=3"></script>
+    <script src="./src/input/input.js?v=4"></script>
     
     <!-- Menu -->
-    <script src="./src/menu/menuCube.js?v=2"></script>
-    <script src="./src/menu/menuShader.js?v=2"></script>
-    <script src="./src/menu/menu.js?v=2"></script>
+    <script src="./src/menu/menuCube.js?v=1"></script>
+    <script src="./src/menu/menuShader.js?v=1"></script>
+    <script src="./src/menu/menu.js?v=1"></script>
+    
+    <!-- Doors -->
+    <script src="./src/doors/door.js?v=1"></script>
+    
+    <!-- Geometry Tree -->
+    <script src="./src/geometry/tree.js?v=1"></script>
     
     <!-- Aplicação Principal -->
-    <script src="./src/main.js?v=5"></script>
+    <script src="./src/main.js?v=8"></script>
 </body>
 </html>

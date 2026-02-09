@@ -32,8 +32,10 @@ class OBJLoader {
         const faceNormals = [];
         const faceTexCoords = [];
         const faceMaterials = [];
+        const faceObjects = [];
         
         let currentMaterial = null;
+        let currentObject = "default";
         let mtllib = null;
         
         for (let line of lines) {
@@ -78,21 +80,26 @@ class OBJLoader {
                     });
                     break;
                     
+                case 'o':
+                case 'g':
+                    currentObject = parts.slice(1).join(' ') || "default";
+                    break;
+                    
                 case 'f':
                     this.parseFace(parts, vertices, normals, texCoords, 
                                   faceVertices, faceNormals, faceTexCoords, 
-                                  faceMaterials, currentMaterial);
+                                  faceMaterials, faceObjects, currentMaterial, currentObject);
                     break;
             }
         }
         
-        const geometry = this.buildGeometry(faceVertices, faceNormals, faceTexCoords, faceMaterials);
+        const geometry = this.buildGeometry(faceVertices, faceNormals, faceTexCoords, faceMaterials, faceObjects);
         geometry.mtllib = mtllib;
         return geometry;
     }
 
     static parseFace(parts, vertices, normals, texCoords, 
-                     faceVertices, faceNormals, faceTexCoords, faceMaterials, currentMaterial) {
+                     faceVertices, faceNormals, faceTexCoords, faceMaterials, faceObjects, currentMaterial, currentObject) {
         const faceData = [];
         
         for (let i = 1; i < parts.length; i++) {
@@ -107,26 +114,26 @@ class OBJLoader {
         
         if (faceData.length === 3) {
             this.addTriangle(faceData, vertices, normals, texCoords,
-                           faceVertices, faceNormals, faceTexCoords, faceMaterials, currentMaterial);
+                           faceVertices, faceNormals, faceTexCoords, faceMaterials, faceObjects, currentMaterial, currentObject);
         } else if (faceData.length === 4) {
             const triangle1 = [faceData[0], faceData[1], faceData[2]];
             const triangle2 = [faceData[0], faceData[2], faceData[3]];
             
             this.addTriangle(triangle1, vertices, normals, texCoords,
-                           faceVertices, faceNormals, faceTexCoords, faceMaterials, currentMaterial);
+                           faceVertices, faceNormals, faceTexCoords, faceMaterials, faceObjects, currentMaterial, currentObject);
             this.addTriangle(triangle2, vertices, normals, texCoords,
-                           faceVertices, faceNormals, faceTexCoords, faceMaterials, currentMaterial);
+                           faceVertices, faceNormals, faceTexCoords, faceMaterials, faceObjects, currentMaterial, currentObject);
         } else if (faceData.length > 4) {
             for (let i = 1; i < faceData.length - 1; i++) {
                 const triangle = [faceData[0], faceData[i], faceData[i + 1]];
                 this.addTriangle(triangle, vertices, normals, texCoords,
-                               faceVertices, faceNormals, faceTexCoords, faceMaterials, currentMaterial);
+                               faceVertices, faceNormals, faceTexCoords, faceMaterials, faceObjects, currentMaterial, currentObject);
             }
         }
     }
 
     static addTriangle(triangleData, vertices, normals, texCoords,
-                      faceVertices, faceNormals, faceTexCoords, faceMaterials, currentMaterial) {
+                      faceVertices, faceNormals, faceTexCoords, faceMaterials, faceObjects, currentMaterial, currentObject) {
         for (const data of triangleData) {
             const vertex = vertices[data.vIndex];
             faceVertices.push(vertex.x, vertex.y, vertex.z);
@@ -148,10 +155,14 @@ class OBJLoader {
             if (faceMaterials) {
                 faceMaterials.push(currentMaterial || 'default');
             }
+
+            if (faceObjects) {
+                faceObjects.push(currentObject || 'default');
+            }
         }
     }
 
-    static buildGeometry(faceVertices, faceNormals, faceTexCoords, faceMaterials) {
+    static buildGeometry(faceVertices, faceNormals, faceTexCoords, faceMaterials, faceObjects) {
         const positions = new Float32Array(faceVertices);
         const normals = new Float32Array(faceNormals);
         const texCoords = new Float32Array(faceTexCoords);
@@ -180,7 +191,8 @@ class OBJLoader {
             texCoords,
             indices,
             vertexCount: indices.length,
-            faceMaterials
+            faceMaterials,
+            faceObjects
         };
     }
     
@@ -270,6 +282,74 @@ class OBJLoader {
         }
 
         return geometriesByMaterial;
+    }
+
+    static splitByObject(geometry) {
+        if (!geometry.faceObjects) {
+            return { 'default': geometry };
+        }
+
+        const geometriesByObject = {};
+        const faceObjects = geometry.faceObjects;
+
+        for (let i = 0; i < faceObjects.length; i++) {
+            const objectName = faceObjects[i] || 'default';
+            if (!geometriesByObject[objectName]) {
+                geometriesByObject[objectName] = {
+                    positions: [],
+                    colors: [],
+                    normals: [],
+                    texCoords: [],
+                    faceMaterials: [],
+                };
+            }
+
+            const group = geometriesByObject[objectName];
+            group.positions.push(
+                geometry.positions[i * 3 + 0],
+                geometry.positions[i * 3 + 1],
+                geometry.positions[i * 3 + 2]
+            );
+            group.colors.push(
+                geometry.colors[i * 3 + 0],
+                geometry.colors[i * 3 + 1],
+                geometry.colors[i * 3 + 2]
+            );
+            group.normals.push(
+                geometry.normals[i * 3 + 0],
+                geometry.normals[i * 3 + 1],
+                geometry.normals[i * 3 + 2]
+            );
+            if (geometry.texCoords.length > 0) {
+                group.texCoords.push(
+                    geometry.texCoords[i * 2 + 0],
+                    geometry.texCoords[i * 2 + 1]
+                );
+            }
+            if (geometry.faceMaterials) {
+                group.faceMaterials.push(geometry.faceMaterials[i]);
+            }
+        }
+
+        for (const [objectName, group] of Object.entries(geometriesByObject)) {
+            const vertexCount = group.positions.length / 3;
+            const indices = new Uint16Array(vertexCount);
+            for (let i = 0; i < vertexCount; i++) {
+                indices[i] = i;
+            }
+
+            geometriesByObject[objectName] = {
+                positions: new Float32Array(group.positions),
+                colors: new Float32Array(group.colors),
+                normals: new Float32Array(group.normals),
+                texCoords: group.texCoords.length > 0 ? new Float32Array(group.texCoords) : new Float32Array(0),
+                indices: indices,
+                vertexCount: indices.length,
+                faceMaterials: group.faceMaterials.length > 0 ? group.faceMaterials : null,
+            };
+        }
+
+        return geometriesByObject;
     }
 
     static hasInvalidNormals(normals) {
