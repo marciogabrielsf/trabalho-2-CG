@@ -234,11 +234,6 @@ class Application {
             console.error("Failed to load building:", error);
         }
 
-        // Pirâmide removida
-
-        // Esfera removida
-
-        // Teapot removido
 
         console.log(`Loaded ${this.objModels.length} OBJ models successfully`);
     }
@@ -246,7 +241,11 @@ class Application {
     createRoad() {
         console.log("Creating road...");
         
-        const roadGeometry = Plane.createGeometry(160, 10, 1);
+
+        const grassWidth = 100;
+        const roadLength = grassWidth;
+        
+        const roadGeometry = Plane.createGeometry(roadLength, 10, 1);
         
         for (let i = 0; i < roadGeometry.colors.length; i += 3) {
             roadGeometry.colors[i] = 0.2;     // R
@@ -256,13 +255,13 @@ class Application {
         
         const road = this.renderer.addObject(
             roadGeometry,
-            new Vector3(30, 0.1, 30),
+            new Vector3(0, 0.1, 30),
             new Vector3(0, 0, 0), 
             new Vector3(1, 1, 1)
         );
         this.objModels.push(road);
         
-        console.log("Road created at position (30, 0.03, -16)");
+        console.log("Road created at position (0, 0.1, 30)");
     }
 
     createTrees() {
