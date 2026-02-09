@@ -239,7 +239,7 @@ class Application {
     }
 
     createRoad() {
-        console.log("Creating road...");
+        console.log("Creating roads...");
         
 
         const grassWidth = 100;
@@ -262,6 +262,24 @@ class Application {
         this.objModels.push(road);
         
         console.log("Road created at position (0, 0.1, 30)");
+        
+        const sideRoadGeometry = Plane.createGeometry(10, roadLength, 1);
+        
+        for (let i = 0; i < sideRoadGeometry.colors.length; i += 3) {
+            sideRoadGeometry.colors[i] = 0.2;     // R
+            sideRoadGeometry.colors[i + 1] = 0.2; // G
+            sideRoadGeometry.colors[i + 2] = 0.2; // B
+        }
+        
+        const sideRoad = this.renderer.addObject(
+            sideRoadGeometry,
+            new Vector3(40, 0.1, 0),
+            new Vector3(0, 0, 0), 
+            new Vector3(1, 1, 1)
+        );
+        this.objModels.push(sideRoad);
+        
+        console.log("Side road created at position (40, 0.1, 0)");
     }
 
     createTrees() {
@@ -300,7 +318,6 @@ class Application {
         this.deltaTime = (currentTime - this.lastTime) / 1000;
         this.lastTime = currentTime;
         
-        // Atualizar o cubo rotativo do menu
         this.menu.update(this.deltaTime);
         
         // Processar input do menu
