@@ -1,6 +1,6 @@
 # Trabalho 2 - Computação Gráfica
 
- A ideia do projeto é criar um cenário baseado no prédio NC2A da Universidade Estadual do Ceará, com pistas ao redor e árvores, utilizando um modelo 3D carregado via OBJ. O projeto inclui um menu principal interativo, sistema de portas animadas, iluminação dinâmica, skybox animado e shadow mapping.
+ A ideia do projeto é criar um passeio virtual baseado no prédio NC2A da Universidade Estadual do Ceará, com pistas ao redor e árvores, utilizando um modelo 3D carregado via OBJ. O projeto inclui um menu principal interativo, sistema de portas animadas, iluminação dinâmica, skybox animado e shadow mapping.
 
 ## Características
 
@@ -26,7 +26,7 @@
 |-------|------|
 | **↑ / ↓** | Navegar entre opções do menu |
 | **Enter** | Selecionar opção |
-| **ESC** | Voltar ao menu (quando em jogo ou controles) |
+| **ESC** | Voltar ao menu (quando no passeio ou controles) |
 | **Click** | Selecionar opção com mouse |
 
 ### Movimentação (No Jogo)
